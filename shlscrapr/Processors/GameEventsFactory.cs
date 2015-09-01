@@ -4,15 +4,14 @@ using shlscrapr.Models;
 
 namespace shlscrapr.Processors
 {
-    public class GameEventsFactory
+    public class GameEventsFactory : IGameEventsFactory
     {
-        public static GameEvents HandleEvents(List<Event> events, List<GamePlay> gamePlays, string teamId, int round)
+        public GameEvents HandleEvents(List<Event> events, List<GamePlayState> gamePlayStates, string teamId, int round)
         {
             var gameEvents = new List<GameEvent>();
             var gameId = events.First().GameId;
-            var teamEvents = events.Where(e => e.Team != "SHL" && e.Class != "Period").GroupBy(e => e.Team).ToList();
 
-            foreach (var teamEvent in teamEvents)
+            foreach (var teamEvent in events.TeamEvents())
             {
                 var teamName = teamEvent.Key;
 
@@ -20,9 +19,7 @@ namespace shlscrapr.Processors
                 {
                     var eventStartTime = GameTimeCalculator.Calculate(liveEvent.Period, liveEvent.TimePeriod);
 
-                    var gamePlay =
-                        gamePlays.FirstOrDefault(p => p.StartTime <= eventStartTime && p.EndTime > eventStartTime) ??
-                        gamePlays.Last();
+                    var gamePlayState = gamePlayStates.StateThisSecond(eventStartTime);
 
                     var gameEvent = new GameEvent()
                     {
@@ -38,8 +35,8 @@ namespace shlscrapr.Processors
                         Type = liveEvent.Type,
                         LocationX = liveEvent.Location != null ? liveEvent.Location.X : -1,
                         LocationY = liveEvent.Location != null ? liveEvent.Location.Y : -1,
-                        HomeTeamAdvantage = gamePlay.HomeTeamAdvantage,
-                        PlayersOnIce = gamePlay.PlayersOnIce,
+                        HomeTeamAdvantage = gamePlayState.HomeTeamAdvantage,
+                        PlayersOnIce = gamePlayState.PlayersOnIce,
                         Period = liveEvent.Period,
                     };
 

@@ -5,11 +5,6 @@ namespace shlscrapr.Models
 {
     public class GameEvent
     {
-        public string Print()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
-        }
-
         public int GameId { get; set; }
         public int Round { get; set; }
         public int Period { get; set; }

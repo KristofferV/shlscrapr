@@ -3,7 +3,7 @@ using Newtonsoft.Json.Converters;
 
 namespace shlscrapr.Models
 {
-    public class GamePlay
+    public class GamePlayState
     {
         public int GameId { get; set; }
         public int StartTime { get; set; }
@@ -12,10 +12,5 @@ namespace shlscrapr.Models
         public PlayersOnIce PlayersOnIce { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]
         public TeamAdvantage HomeTeamAdvantage { get; set; }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
-        }
     }
 }

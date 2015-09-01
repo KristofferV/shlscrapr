@@ -41,6 +41,9 @@
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.4.0.1\lib\net45\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="SimpleInjector">
+      <HintPath>..\packages\SimpleInjector.3.0.4\lib\net45\SimpleInjector.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -51,6 +54,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Importers\IImporterRepository.cs" />
+    <Compile Include="Infrastructure\JsonToFileRepository.cs" />
+    <Compile Include="Infrastructure\IEventRepository.cs" />
     <Compile Include="Infrastructure\Settings.cs" />
     <Compile Include="Infrastructure\ApiAgent.cs" />
     <Compile Include="Infrastructure\BaseMembersFirstContractResolver.cs" />
@@ -58,11 +63,17 @@
     <Compile Include="Infrastructure\Logger.cs" />
     <Compile Include="Models\GameEvent.cs" />
     <Compile Include="Models\GameEvents.cs" />
-    <Compile Include="Models\GamePlay.cs" />
+    <Compile Include="Models\GamePlayState.cs" />
     <Compile Include="Models\PlayersOnIce.cs" />
     <Compile Include="Models\PlayEvent.cs" />
     <Compile Include="Models\TeamAdvantage.cs" />
     <Compile Include="Models\TeamEventState.cs" />
+    <Compile Include="Processors\EventListExtensions.cs" />
+    <Compile Include="Processors\IGameEventsFactory.cs" />
+    <Compile Include="Processors\IGamePlayFactory.cs" />
+    <Compile Include="Processors\Penalties\PenaltyExtensions.cs" />
+    <Compile Include="Processors\Penalties\PenaltyScoreBoard.cs" />
+    <Compile Include="Processors\PlayEventListExtensions.cs" />
     <Compile Include="Processors\GameEventsFactory.cs" />
     <Compile Include="Processors\GamePlayFactory.cs" />
     <Compile Include="Processors\GameTimeCalculator.cs" />
@@ -72,13 +83,14 @@
     <Compile Include="Importers\IImporter.cs" />
     <Compile Include="Importers\Importer.cs" />
     <Compile Include="Models\ImportModels.cs" />
-    <Compile Include="Models\GamePlays.cs" />
+    <Compile Include="Models\GamePlayStates.cs" />
     <Compile Include="Infrastructure\JsonToFileSerializer.cs" />
     <Compile Include="Processors\Penalties\PenaltiesFactory.cs" />
     <Compile Include="Processors\Penalties\PenaltyBox.cs" />
-    <Compile Include="Processors\Goals\PlayScore.cs" />
-    <Compile Include="Processors\Penalties\PlayTypeExtensions.cs" />
+    <Compile Include="Processors\Goals\ScoreBoard.cs" />
+    <Compile Include="Processors\PlayTypeExtensions.cs" />
     <Compile Include="Processors\GameProcessor.cs" />
+    <Compile Include="Processors\PlayStateListExtensions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\Season.cs" />

@@ -8,10 +8,16 @@ namespace shlscrapr.Processors
     public class GameProcessor
     {
         private readonly IImporterRepository _importerRepository;
+        private readonly IEventRepository _eventRepository;
+        private readonly IGamePlayFactory _gamePlayFactory;
+        private readonly IGameEventsFactory _gameEventsFactory;
 
-        public GameProcessor(IImporterRepository importerRepository)
+        public GameProcessor(IImporterRepository importerRepository, IEventRepository eventRepository, IGamePlayFactory gamePlayFactory, IGameEventsFactory gameEventsFactory)
         {
             _importerRepository = importerRepository;
+            _eventRepository = eventRepository;
+            _gamePlayFactory = gamePlayFactory;
+            _gameEventsFactory = gameEventsFactory;
         }
 
         public void Process(Season season)
@@ -30,16 +36,14 @@ namespace shlscrapr.Processors
 
                 if (events.Any() == false) 
                     continue;
-                
-                var gamePlays = GamePlayFactory.HandleGame(events, homeTeam);
 
-                //TODO IoC storage
-                JsonToFileSerializer<GamePlays>.WriteToFile(gamePlays, Settings.GetGamePlaysDataFileName(season.Id, i));
+                var gamePlays = _gamePlayFactory.HandleGame(events, homeTeam);
 
-                var gameEvents = GameEventsFactory.HandleEvents(events, gamePlays.Items, homeTeam, report.round);
+                _eventRepository.WriteToFile(gamePlays, Settings.GetGamePlaysDataFileName(season.Id, i));
 
-                //TODO IoC storage
-                JsonToFileSerializer<GameEvents>.WriteToFile(gameEvents, Settings.GetGameEventsDataFileName(season.Id, i));
+                var gameEvents = _gameEventsFactory.HandleEvents(events, gamePlays.Items, homeTeam, report.round);
+
+                _eventRepository.WriteToFile(gameEvents, Settings.GetGameEventsDataFileName(season.Id, i));
             }
 
         }

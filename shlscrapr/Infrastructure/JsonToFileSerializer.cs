@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using Newtonsoft.Json;
 using shlscrapr.Models;
 
@@ -8,16 +6,6 @@ namespace shlscrapr.Infrastructure
 {
     public static class JsonToFileSerializer<T> where T : BaseModel
     {
-
-        public static void WriteToFile(IEnumerable<T> eventModels, string fileNamePattern)
-        {
-            foreach (var eventModel in eventModels.Where(e => e.Id > 0))
-            {
-                var fileName = string.Format(fileNamePattern, eventModel.Id);
-                WriteToFile(eventModel, fileName);
-            }
-        }
-
         public static void WriteToFile(T jsonObject, string fileName)
         {
             CreateDirectoryIfMissing(fileName);

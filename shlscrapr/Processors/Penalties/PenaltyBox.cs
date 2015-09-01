@@ -1,16 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using shlscrapr.Infrastructure;
 using shlscrapr.Models;
 
 namespace shlscrapr.Processors.Penalties
 {
     public class PenaltyBox
     {
-        //TODO Refactor this!!
-
         private readonly int _gameId;
         private readonly List<PlayEvent> _penalties = new List<PlayEvent>();
-        private readonly List<PlayEvent> _expiredPenalties = new List<PlayEvent>();
         private PlayersOnIce _playersOnIce = PlayersOnIce.FiveOnFive;
 
         public PenaltyBox(int gameId)
@@ -40,13 +38,12 @@ namespace shlscrapr.Processors.Penalties
             {
                 _penalties.Remove(playEvent);
             }
-            _expiredPenalties.AddRange(playEvents);
             CalculatePlayersOnIce(second);
         }
 
-        public IEnumerable<PlayEvent> PenaltiesThatExpireThisSecond(int second)
+        public IList<PlayEvent> PenaltiesThatExpireThisSecond(int second)
         {
-            return _penalties.WithoutKvittningar().Where(p => p.EndTime == second);
+            return _penalties.WithoutKvittningar().Where(p => p.EndTime == second).ToList();
         }
 
         public void HandlePowerPlayGoal(PlayEvent powerPlayGoal)
@@ -54,11 +51,11 @@ namespace shlscrapr.Processors.Penalties
             var penaltyThatExpiresForPowerPlayGoal = GetPenaltyThatExpiresForPowerPlayGoal(powerPlayGoal);
             if (penaltyThatExpiresForPowerPlayGoal == null)
             {
-                //Logger.InfoFormat("{1} No expiring Penalty for PP Second {0}", powerPlayGoal.StartTime.ToClockTime(), _gameId);
+                Logger.Debug(string.Format("{1} No expiring Penalty for PP Second {0}", powerPlayGoal.StartTime.ToClockTime(), _gameId));
                 return;
             }
 
-            //Logger.InfoFormat("{4} Penalty for PP Second {0} => S {1} E {2} D {3}", powerPlayGoal.StartTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.StartTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.EndTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.Description, _gameId);
+            Logger.Debug(string.Format("{4} Penalty for PP Second {0} => S {1} E {2} D {3}", powerPlayGoal.StartTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.StartTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.EndTime.ToClockTime(), penaltyThatExpiresForPowerPlayGoal.Description, _gameId));
             penaltyThatExpiresForPowerPlayGoal.EndTime = powerPlayGoal.StartTime;
             ExpirePenalties(new List<PlayEvent> { penaltyThatExpiresForPowerPlayGoal });
         }
@@ -76,10 +73,7 @@ namespace shlscrapr.Processors.Penalties
 
         public PlayersOnIce PlayersOnIce 
         { 
-            get
-            {
-                return _playersOnIce; 
-            } 
+            get { return _playersOnIce; } 
         }
 
         public PenaltyScoreBoard PenaltyScoreBoard
@@ -118,121 +112,5 @@ namespace shlscrapr.Processors.Penalties
             if (homePenalties >= 2 && awayPenalties >= 2)
                 _playersOnIce = PlayersOnIce.ThreeOnThree;                
         }
-    }
-
-    public static class PenaltyExtensions
-    {
-        public static void CalculateKvittningar(this IEnumerable<PlayEvent> penalties, PlayersOnIce playersOnIce)
-        {
-            var penaltyList = penalties.ToList();
-
-            var homePenalties = penaltyList.Where(p => p.HomeTeam && !p.PenaltyIsMisconduct).ToList();
-            var awayPenalties = penaltyList.Where(p => !p.HomeTeam && !p.PenaltyIsMisconduct).ToList();
-
-            if (IsExceptionToRule(playersOnIce, homePenalties, awayPenalties))
-                return;
-
-            foreach (var homePenalty in homePenalties)
-            {
-                var awayPenaltyThatShouldKvittas = awayPenalties.WithoutKvittningar().FirstOrDefault(p => p.StartTime == homePenalty.StartTime && p.PenaltyTime == homePenalty.PenaltyTime);
-                if (awayPenaltyThatShouldKvittas == null)
-                    continue;
-
-                homePenalty.IsKvittad = true;
-                awayPenaltyThatShouldKvittas.IsKvittad = true;
-            }
-
-            //Handle extra minors if original penalty is kvittad they should get the original startime
-            foreach (var penalty in penaltyList.WithoutKvittningar().Where(p => p.HasOriginalPenalty))
-            {
-                penalty.HandleOriginalPenaltyIsKvittad();
-            }
-        }
-
-        public static void HandleOriginalPenaltyIsKvittad(this PlayEvent penalty)
-        {
-            if (!penalty.PenaltyIsMinor || !penalty.OriginalPenalty.PenaltyIsMinor || !penalty.OriginalPenalty.IsKvittad) return;
-
-            penalty.StartTime = penalty.OriginalPenalty.StartTime;
-            penalty.EndTime = penalty.OriginalPenalty.EndTime;
-        }
-
-        private static bool IsExceptionToRule(PlayersOnIce playersOnIce, IEnumerable<PlayEvent> homePenalties, IEnumerable<PlayEvent> awayPenalties)
-        {
-            return playersOnIce == PlayersOnIce.FiveOnFive 
-                                    && homePenalties.Count(p => p.PenaltyIsMinor) == 1
-                                    && awayPenalties.Count(p => p.PenaltyIsMinor) == 1;
-        }
-
-        public static IEnumerable<PlayEvent> WithoutKvittningar(this IEnumerable<PlayEvent> penalties)
-        {
-            return penalties.Where(p => !p.IsKvittad);
-        }
-
-        public static IEnumerable<PlayEvent> SplitIntoMultiplePenalties(this IList<PlayEvent> penalties)
-        {
-            var penaltyList = new List<PlayEvent>();
-
-            penaltyList.AddRange(penalties.Where(p => !p.PenaltyIsDouble));
-
-            foreach (var playEvent in penalties.Where(p => p.PenaltyIsDouble))
-            {
-                var extraPenalty = new PlayEvent(playEvent);
-                if (playEvent.Description.Contains("2 + 2"))
-                {
-                    var endTime = playEvent.StartTime + 120;
-                    playEvent.EndTime = endTime;
-                    extraPenalty.StartTime = endTime;
-                }
-                if (playEvent.Description.Contains("2 + 10"))
-                {
-                    var endTime = playEvent.StartTime + 120;
-                    playEvent.EndTime = endTime;
-                    extraPenalty.StartTime = endTime;
-                    extraPenalty.EndTime = extraPenalty.StartTime + 600;
-                }
-                if (playEvent.Description.Contains("5 + GM"))
-                {
-                    var endTime = playEvent.StartTime + 300;
-                    playEvent.EndTime = endTime;
-                    extraPenalty.StartTime = endTime;
-                    extraPenalty.EndTime = extraPenalty.StartTime + 1200;
-                }
-                penaltyList.Add(playEvent);
-                penaltyList.Add(extraPenalty);
-            }
-
-            return penaltyList;
-        }
-    }
-
-    public class PenaltyScoreBoard
-    {
-        private readonly IEnumerable<ScoreBoardPenalty> _homePenalties;
-        private readonly IEnumerable<ScoreBoardPenalty> _awayPenalties;
-
-        public PenaltyScoreBoard(IEnumerable<PlayEvent> penalties)
-        {
-            var ps = penalties.WithoutKvittningar().OrderBy(p => p.PenaltyTime);
-            _homePenalties = ps.Where(p => p.HomeTeam = true).Select(p => new ScoreBoardPenalty(p));
-            _awayPenalties = ps.Where(p => p.HomeTeam = false).Select(p => new ScoreBoardPenalty(p));
-        }
-
-        public IEnumerable<ScoreBoardPenalty> Home { get { return _homePenalties; } } 
-        public IEnumerable<ScoreBoardPenalty> Away { get { return _awayPenalties; } } 
-    }
-
-    public class ScoreBoardPenalty
-    {
-        private readonly PlayEvent _penalty;
-
-        public ScoreBoardPenalty(PlayEvent penalty)
-        {
-            _penalty = penalty;
-        }
-
-        public int StartTime { get { return _penalty.StartTime; } }
-        public int EndTime { get { return _penalty.EndTime; } }
-        public string Description { get { return _penalty.Description; } }
     }
 }

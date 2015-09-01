@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using shlscrapr.Models;
-using shlscrapr.Processors;
 using shlscrapr.Processors.Goals;
 
 namespace shlscrapr.tests
@@ -8,100 +7,100 @@ namespace shlscrapr.tests
     [TestClass]
     public class HomeTeamAdvantageTests
     {
-        private PlayScore _playScore;
+        private ScoreBoard _scoreBoard;
 
         [TestInitialize]
         public void Initialize()
         {
-            _playScore = new PlayScore();
+            _scoreBoard = new ScoreBoard();
         }
 
         [TestMethod]
         public void OneZeroShouldBeOneUp()
         {
-            _playScore.AddGoal(true);
+            _scoreBoard.AddGoal(true);
 
-            Assert.AreEqual(TeamAdvantage.OneUp, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.OneUp, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void TwoZeroShouldBeTwoUp()
         {
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
 
-            Assert.AreEqual(TeamAdvantage.TwoUp, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.TwoUp, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void ThreeZeroShouldBeThreeUpPlus()
         {
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
 
-            Assert.AreEqual(TeamAdvantage.ThreeUpPlus, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.ThreeUpPlus, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void ZeroOneShouldBeOneDown()
         {
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.OneDown, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.OneDown, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void ZeroTwoShouldBeTwoDown()
         {
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.TwoDown, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.TwoDown, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void ZeroThreeShouldBeThreeDownPlus()
         {
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.ThreeDownPlus, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.ThreeDownPlus, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void OneOneShouldBeEven()
         {
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.Even, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.Even, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void TwoTwoShouldBeEven()
         {
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.Even, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.Even, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void ZeroZeroShouldBeEven()
         {
-            Assert.AreEqual(TeamAdvantage.Even, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.Even, _scoreBoard.HomeTeamAdvantage);
         }
         [TestMethod]
         public void FiveFiveShouldBeEven()
         {
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(true);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
-            _playScore.AddGoal(false);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(true);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
+            _scoreBoard.AddGoal(false);
 
-            Assert.AreEqual(TeamAdvantage.Even, _playScore.HomeTeamAdvantage);
+            Assert.AreEqual(TeamAdvantage.Even, _scoreBoard.HomeTeamAdvantage);
         }
     }
 }

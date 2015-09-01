@@ -7,83 +7,115 @@ using shlscrapr.Processors.Penalties;
 
 namespace shlscrapr.Processors
 {
-    public static class GamePlayFactory
+    public class GamePlayFactory : IGamePlayFactory
     {
-        //TODO Refactor this!!
+        private List<GamePlayState> _gamePlayStates;
+        private int _gameId;
+        private TeamAdvantage _homeTeamAdvantage;
+        private ScoreBoard _scoreBoard;
+        private PenaltyBox _penaltyBox;
 
-        public static GamePlays HandleGame(IList<Event> events, string homeTeam)
+        private void Init(IEnumerable<Event> events)
         {
-            var gamePlays = new List<GamePlay>();
+            _gamePlayStates = new List<GamePlayState>();
 
-            var gameId = events.First().GameId;
+            _gameId = events.First().GameId;
 
-            var goals = GoalFactory.Create(events, homeTeam);
+            _homeTeamAdvantage = TeamAdvantage.Even;
+            _scoreBoard = new ScoreBoard();
+            _penaltyBox = new PenaltyBox(_gameId);
+        }
 
-            var penalties = PenaltiesFactory.Create(events, homeTeam);
 
-            var goalsAndPenalties = goals;
-
-            goalsAndPenalties.AddRange(penalties);
-
-            var homeTeamAdvantage = TeamAdvantage.Even;
-            var playScore = new PlayScore();
-            var penaltyBox = new PenaltyBox(gameId);
-
-            var lastEvent = goalsAndPenalties.OrderBy(e => e.EndTime).Last();
-
+        public GamePlayStates HandleGame(IList<Event> events, string homeTeam)
+        {
+            Init(events);
+            
+            var goalsAndPenalties = GetGoalsAndPenalties(events, homeTeam);
+            var endOfGame = goalsAndPenalties.OrderBy(e => e.EndTime).Last().EndTime;
             var lastEndTime = 0;
-            for (var second = 0; second <= lastEvent.EndTime; second++)
+
+            for (var second = 0; second <= endOfGame; second++)
             {
-                var eventsThatStartThisSecond = goalsAndPenalties.Where(p => p.StartTime == second).ToList();
-                var penaltiesThatExpireThisSecond = penaltyBox.PenaltiesThatExpireThisSecond(second).ToList();
+                var eventsThatStartThisSecond = goalsAndPenalties.EventsThatStartThisSecond(second);
+                var penaltiesThatExpireThisSecond = _penaltyBox.PenaltiesThatExpireThisSecond(second);
 
                 if (eventsThatStartThisSecond.Any() || penaltiesThatExpireThisSecond.Any())
                 {
-                    gamePlays.Add(new GamePlay
+                    _gamePlayStates.Add(new GamePlayState
                     {
-                        GameId = gameId,
+                        GameId = _gameId,
                         StartTime = lastEndTime,
                         EndTime = second,
-                        PlayersOnIce = penaltyBox.PlayersOnIce,
-                        HomeTeamAdvantage = homeTeamAdvantage,
+                        PlayersOnIce = _penaltyBox.PlayersOnIce,
+                        HomeTeamAdvantage = _homeTeamAdvantage,
                     });
                     lastEndTime = second;
                 }
                 
-                foreach (var playEvent in eventsThatStartThisSecond.Where(p => p.IsGoal))
-                {
-                    if (playEvent.IsGoal)
-                    {
-                        playScore.AddGoal(playEvent.HomeTeam);
-                        homeTeamAdvantage = playScore.HomeTeamAdvantage;
-                    }
+                HandleGoalsThisSecond(eventsThatStartThisSecond, second);
 
-                    Logger.Debug(string.Format("{4} Start Second {0} => S {1} E {2} D {3} PoI {5} Ha {6} Cs {7} Home {8}", second.ToClockTime(), playEvent.StartTime.ToClockTime(), playEvent.EndTime.ToClockTime(), playEvent.Description, gameId, penaltyBox.PlayersOnIce, homeTeamAdvantage, playScore.CurrentScore, playEvent.HomeTeam));
-
-                    if (playEvent.IsPowerPlayGoal)
-                    {
-                        penaltyBox.HandlePowerPlayGoal(playEvent);
-                    }
-                }
-
-                var penaltiesThatStartThisSecond = eventsThatStartThisSecond.Where(p => p.IsPenalty).ToList();
-                penaltyBox.AddPenalties(penaltiesThatStartThisSecond);
-                foreach (var playEvent in penaltiesThatStartThisSecond)
-                {
-                    Logger.Debug(string.Format("{4} Start Second {0} => S {1} E {2} D {3} PoI {5} Ha {6} Cs {7} Home {8}", second.ToClockTime(), playEvent.StartTime.ToClockTime(), playEvent.EndTime.ToClockTime(), playEvent.Description, gameId, penaltyBox.PlayersOnIce, homeTeamAdvantage, playScore.CurrentScore, playEvent.HomeTeam));
-                }
-
-                penaltyBox.ExpirePenalties(penaltiesThatExpireThisSecond);
-                foreach (var playEvent in penaltiesThatExpireThisSecond)
-                {
-                    Logger.Debug(string.Format("{4} End Second {0} => S {1} E {2} D {3} PoI {5} Ha {6} Cs {7} Home {8}", second.ToClockTime(), playEvent.StartTime.ToClockTime(), playEvent.EndTime.ToClockTime(), playEvent.Description, gameId, penaltyBox.PlayersOnIce, homeTeamAdvantage, playScore.CurrentScore, playEvent.HomeTeam));
-                }
+                HandlePenaltiesThisSecond(eventsThatStartThisSecond, second);
             }
 
-            Logger.Debug(string.Format("END GAME {0}", gameId));
+            Logger.Debug(string.Format("END GAME {0}", _gameId));
             Logger.Debug("");
 
-            return new GamePlays {Items = gamePlays.OrderBy(g => g.StartTime).ToList()};
-        }        
+            return new GamePlayStates { Items = _gamePlayStates.OrderBy(g => g.StartTime).ToList() };
+        }
+
+        private static List<PlayEvent> GetGoalsAndPenalties(IList<Event> events, string homeTeam)
+        {
+            var goals = GoalFactory.Create(events, homeTeam);
+            var penalties = PenaltiesFactory.Create(events, homeTeam);
+            var goalsAndPenalties = goals;
+            goalsAndPenalties.AddRange(penalties);
+            return goalsAndPenalties;
+        }
+
+        private void HandlePenaltiesThisSecond(IList<PlayEvent> eventsThatStartThisSecond, int second)
+        {
+            var penaltiesThatStartThisSecond = eventsThatStartThisSecond.Penalties();
+            _penaltyBox.AddPenalties(penaltiesThatStartThisSecond);
+
+            var penaltiesThatExpireThisSecond = _penaltyBox.PenaltiesThatExpireThisSecond(second);
+            _penaltyBox.ExpirePenalties(penaltiesThatExpireThisSecond.ToList());
+
+            //Logging
+            foreach (var playEvent in penaltiesThatStartThisSecond)
+            {
+                Log(playEvent, second);
+            } 
+            foreach (var playEvent in penaltiesThatExpireThisSecond)
+            {
+                Log(playEvent, second);
+            }
+        }
+
+        private void HandleGoalsThisSecond(IList<PlayEvent> eventsThatStartThisSecond, int second)
+        {
+            foreach (var playEvent in eventsThatStartThisSecond.Goals())
+            {
+                if (playEvent.IsGoal)
+                {
+                    _scoreBoard.AddGoal(playEvent.HomeTeam);
+                    _homeTeamAdvantage = _scoreBoard.HomeTeamAdvantage;
+                }
+
+                Log(playEvent, second);
+
+                if (playEvent.IsPowerPlayGoal)
+                {
+                    _penaltyBox.HandlePowerPlayGoal(playEvent);
+                }
+            }
+        }
+        private void Log(PlayEvent playEvent, int second)
+        {
+            Logger.Debug(string.Format("{4} Start Second {0} => S {1} E {2} D {3} PoI {5} Ha {6} Cs {7} Home {8}",
+                second.ToClockTime(), playEvent.StartTime.ToClockTime(), playEvent.EndTime.ToClockTime(),
+                playEvent.Description, _gameId, _penaltyBox.PlayersOnIce, _homeTeamAdvantage, _scoreBoard.CurrentScore,
+                playEvent.HomeTeam));
+        }
     }
 }

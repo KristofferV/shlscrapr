@@ -1,6 +1,6 @@
 namespace shlscrapr.Models
 {
-    public class TeamEventState : GamePlay
+    public class TeamEventState : GamePlayState
     {
         public bool Close { get; set; }
         public bool Leading { get; set; }

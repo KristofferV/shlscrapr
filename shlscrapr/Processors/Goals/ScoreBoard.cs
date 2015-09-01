@@ -2,7 +2,7 @@
 
 namespace shlscrapr.Processors.Goals
 {
-    public class PlayScore
+    public class ScoreBoard
     {
         public int HomeTeamGoals { get; set; }
         public int AwayTeamGoals { get; set; }
