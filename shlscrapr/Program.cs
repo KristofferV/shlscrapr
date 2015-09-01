@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using shlscrapr.Importers;
+using shlscrapr.Infrastructure;
+using shlscrapr.Models;
+using shlscrapr.Processors;
 
 namespace shlscrapr
 {
@@ -10,6 +10,31 @@ namespace shlscrapr
     {
         static void Main(string[] args)
         {
+            //Init logging
+            Logger.Init("shlscrapr");
+
+            //IoC
+            var processor = new GameProcessor(new ImporterRepository());
+
+            //Download all games
+            Parallel.ForEach(Importer.Importers, importer =>
+            {
+                importer.ImportAll();
+            });
+            
+            //Process all games to game events
+
+            //Parallel.ForEach(Season.Seasons, season =>
+            //{
+            //    processor.Process(season);
+            //});
+
+            foreach (var season in Season.Seasons)
+            {
+                processor.Process(season);
+            }
+
+            //Done
         }
     }
 }
